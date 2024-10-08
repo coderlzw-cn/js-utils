@@ -3,19 +3,22 @@
     "baseUrl": ".",
     "declaration": true,
     "declarationMap": false,
-    "outDir": "./dist",
     "strict": true,
     "esModuleInterop": true,
+    "outDir": "./dist",
     "declarationDir": "./dist/types",
+    "rootDir": "./src",
     "lib": [
       "dom",
       "esnext"
     ],
     "allowSyntheticDefaultImports": true,
     "removeComments": true,
-    "types": [
-      "jest", "node"
-    ]
+    "paths": {
+      "tslib": [
+        "node_modules/tslib/tslib.d.ts"
+      ]
+    }
   },
   "include": [
     "src/**/*.ts"

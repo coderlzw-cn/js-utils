@@ -3,7 +3,7 @@
  * https://jestjs.io/docs/configuration
  */
 
-import type {Config} from 'jest';
+import type {Config} from "jest";
 
 const config: Config = {
     // All imported modules in your tests should be mocked automatically
@@ -146,7 +146,7 @@ const config: Config = {
     // snapshotSerializers: [],
 
     // 用于测试的测试环境
-    testEnvironment: "jsdom",
+    testEnvironment: "jsdom"
 
     // 将传递给testEnvironment的选项
     // testEnvironmentOptions: {},

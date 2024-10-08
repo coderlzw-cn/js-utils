@@ -1,4 +1,4 @@
-class StringUtils {
+export default class StringUtils {
     /**
      * 判断字符串是否为空字符串或null
      * @param str 要检查的字符串
@@ -102,8 +102,7 @@ class StringUtils {
      * @param removeEnds 是否去除首尾空格，默认为 false
      * @returns 处理后的字符串
      */
-     static removeMiddleSpaces = (str: string, removeEnds: boolean = false) => removeEnds ? str.trim().replace(/\s/g, '') : str.replace(/\s/g, '')
-
+     static removeMiddleSpaces = (str: string, removeEnds: boolean = false) => removeEnds ? str.trim().replace(/\s/g, "") : str.replace(/\s/g, "");
 
     /**
      * 判断字符串是否为数字
@@ -115,17 +114,16 @@ class StringUtils {
      */
      static isNumeric = (str: string) => /^\d+$/.test(str);
 
-
     /**
      * 将字符串转换为数字
      * @param str 要转换的字符串
      * @returns 转换后的数字，如果无法转换则返回NaN
      */
      static stringToNumber = (str: string) => {
-        if (!this.isNumeric(str)) {
+        if (!/^\d+$/.test(str)) {
             return NaN;
         }
-        return Number(str)
+        return Number(str);
     };
 
     /**
@@ -146,7 +144,7 @@ class StringUtils {
      * @returns True if the string is a palindrome, false otherwise
      */
      static isPalindrome = (str: string) => {
-        const reversedStr = str.split('').reverse().join('');
+        const reversedStr = str.split("").reverse().join("");
         return str === reversedStr;
     };
 
