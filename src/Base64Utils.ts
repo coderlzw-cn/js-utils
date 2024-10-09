@@ -22,9 +22,25 @@
  * console.log(Base64Utils.isBase64('', {allowEmpty: false})); // false
  */
 export default class Base64Utils {
-    private static isNodeEnv() {
-        console.log(process);
-        return (typeof process !== "undefined" && process.versions != null && process.versions.node != null);
+
+    private static isNode: boolean = (
+        typeof process !== "undefined" &&
+        process.versions != null &&
+        process.versions.node != null &&
+        typeof window === "undefined"
+    );
+
+    private static nodeBuffer: typeof Buffer | undefined;
+
+    static {
+        if (this.isNode) {
+            // 动态导入 Buffer，避免在浏览器中报错
+            import("buffer").then(({ Buffer }) => {
+                this.nodeBuffer = Buffer;
+            }).catch(err => {
+                console.error("Failed to load Buffer:", err);
+            });
+        }
     }
 
     /**
@@ -32,9 +48,7 @@ export default class Base64Utils {
      * @param val
      */
     static encode(val: string) {
-        if (Base64Utils.isNodeEnv()) {
-            return Buffer.from(val, "utf-8").toString("base64");
-        }
+
         /**
          将字符串进行编码，URI 编码会将非 ASCII 字符串转换为 %XX 形式的 UTF8 编码字符串，其中 xx 是该字节的十六进制值，例如，汉 字的 UTF-8 编码是 %E6%B1%89。
          btoa()：将给定的字符串转换为 Base64 编码。但 btoa 要求输入的必须是 ASCII 字符，所以如果 val 中有非 ASCII 字符（例如中文），encodeURIComponent 会将它们转换为 %XX 形式的字符，从而保证 btoa 接收到的字符串都是有效的 ASCII 字符。
@@ -46,19 +60,33 @@ export default class Base64Utils {
          * 正则表达式 /%([0-9A-F]{2})/g 匹配所有形如 %XX 的字符序列，将十六进制字符串 p1 转换为对应的字符。即将 %E6%B1%89 中的每个 %XX 转换为其对应的字节。
          * 这种方式下，编码结果更加接近标准的 Base64 编码。因为它将 URI 编码后的字节重新转换为字节序列，再进行 Base64 编码。
          */
-        return btoa(encodeURIComponent(val).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(Number("0x" + p1))));
+        if (this.isNode && this.nodeBuffer) {
+            return this.nodeBuffer.from(val, "utf-8").toString("base64");
+        } else {
+            return btoa(encodeURIComponent(val).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(Number("0x" + p1))));
+        }
+        // return btoa(encodeURIComponent(val).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(Number("0x" + p1))));
     }
 
     /**
-     * 把 Base64 编码的字符串还原为原始字符串
-     * @param val
+     * 把 Base64 编码的字符串还原为原始字符串，能够正确处理包含 ASCII 字符（如中文）的字符串。
+     * @param val Base64 字符串
      */
     static decode(val: string) {
-        if (Base64Utils.isNodeEnv()) {
-            return Buffer.from(val, "base64").toString("utf-8");
+        /**
+         * atob(val) 解码 Base64 字符串
+         * c.charCodeAt(0) 获取字符串的 Unicode 编码
+         * 整个过程可以理解为：
+         * 1、将 Base64 字符串解码为原始字节序列。
+         * 2、将每个字节转换为 %xx 格式的 URL 编码
+         * 3、使用 decodeURIComponent() 函数将 URL 编码转换为原始 UTF-8 字符串
+         */
+        if (this.isNode && this.nodeBuffer) {
+            return this.nodeBuffer.from(val, "base64").toString("utf-8");
+        } else {
+            return decodeURIComponent(atob(val).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
         }
-        // 浏览器环境下处理 UTF-8 编码的 Base64
-        return btoa(encodeURIComponent(val).replace(/%([0-9A-F]{2})/g, (match, p1) => String.fromCharCode(Number("0x" + p1))));
+        // return decodeURIComponent(atob(val).split("").map(c => "%" + ("00" + c.charCodeAt(0).toString(16)).slice(-2)).join(""));
     }
 
     /**
@@ -69,7 +97,7 @@ export default class Base64Utils {
     static isBase64(v: string, opts?: IsBase64Options) {
         if (opts?.allowEmpty === false && v === "") return false;
 
-        let regex = "(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+\/]{3}=)?";
+        let regex = "(?:[A-Za-z0-9+\\/]{4})*(?:[A-Za-z0-9+\\/]{2}==|[A-Za-z0-9+/]{3}=)?";
         const mimeRegex = "(data:\\w+\\/[a-zA-Z\\+\\-\\.]+;base64,)";
 
         if (opts?.mimeRequired === true) {

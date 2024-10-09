@@ -21,26 +21,26 @@ export default class ArrayUtils {
      * @deprecated
      * @param array
      */
-    unique1<T>(array: T[]): T[] {
-        const result: T[] = [];
-        const seen: { [key: string]: boolean } = {}; // 用于存储已经遇到的元素
-
-        for (let i = 0; i < array.length; i++) {
-            const item = array[i];
-            // 通过将对象转换为字符串来生成唯一键
-            const key: string = typeof item === "object" && item !== null
-                ? JSON.stringify(item)
-                : String(item); // 将其他类型转换为字符串
-
-            // 如果这个键尚未存在于 seen 中，则将其添加到结果数组中
-            if (!Object.prototype.hasOwnProperty.call(seen, key)) {
-                result.push(item);
-                seen[key] = true; // 记录该键
-            }
-        }
-
-        return result;
-    }
+    // unique<T>(array: T[]): T[] {
+    //     const result: T[] = [];
+    //     const seen: { [key: string]: boolean } = {}; // 用于存储已经遇到的元素
+    //
+    //     for (let i = 0; i < array.length; i++) {
+    //         const item = array[i];
+    //         // 通过将对象转换为字符串来生成唯一键
+    //         const key: string = typeof item === "object" && item !== null
+    //             ? JSON.stringify(item)
+    //             : String(item); // 将其他类型转换为字符串
+    //
+    //         // 如果这个键尚未存在于 seen 中，则将其添加到结果数组中
+    //         if (!Object.prototype.hasOwnProperty.call(seen, key)) {
+    //             result.push(item);
+    //             seen[key] = true; // 记录该键
+    //         }
+    //     }
+    //
+    //     return result;
+    // }
 
     /**
      * 合并多个数组

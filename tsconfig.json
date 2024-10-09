@@ -12,13 +12,13 @@
       "dom",
       "esnext"
     ],
-    "allowSyntheticDefaultImports": true,
-    "removeComments": true,
-    "paths": {
-      "tslib": [
-        "node_modules/tslib/tslib.d.ts"
-      ]
-    }
+//    "allowSyntheticDefaultImports": true,
+//    "removeComments": true
+    // "paths": {
+    //   "tslib": [
+    //     "node_modules/tslib/tslib.d.ts"
+    //   ]
+    // }
   },
   "include": [
     "src/**/*.ts"
