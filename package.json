@@ -1,6 +1,6 @@
 {
   "name": "@coderlzw/utils",
-  "version": "1.0.1-0",
+  "version": "1.0.0-0",
   "description": "一个实用的 JavaScript 工具库，提供常用的函数和辅助方法",
   "main": "./dist/cjs/index.cjs",
   "module": "./dist/esm/index.mjs",
