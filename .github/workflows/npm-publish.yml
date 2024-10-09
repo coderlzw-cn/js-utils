@@ -1,4 +1,4 @@
-name: npm publish  # 定义工作流名称
+name: 发布 npm 包  # 定义工作流名称
 
 on:
   workflow_dispatch:  # 允许手动触发工作流，默认是不开启的
