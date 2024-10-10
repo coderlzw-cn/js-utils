@@ -36,7 +36,7 @@ export default class UrlUtils {
 
     /**
      * 获取 URL 中的查询参数
-     * @param url 包含查询参数的 URL 字符串
+     * @param url 包含查询参数的 URL 字符串å
      * @returns 包含所有查询参数的对象
      *
      * @example
