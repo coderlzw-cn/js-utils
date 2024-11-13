@@ -15,3 +15,4 @@ export {default as RandomGenerator} from "./RandomGenerator";
 export {default as DateUtils} from "./DateUtils";
 export {default as UrlUtils} from "./UrlUtils";
 export {default as NumberUtils} from "./NumberUtils";
+export {tryCatchAsync, tryCatchSync} from "./tryCatchUtilities";

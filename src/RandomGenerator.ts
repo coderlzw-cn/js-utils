@@ -1,3 +1,5 @@
+import crypto, {BinaryLike} from "crypto";
+
 /**
  * 随机数和 UUID 生成工具类
  * 提供了生成指定长度的随机数、随机字符串和不同版本 UUID 的方法
@@ -80,6 +82,7 @@ export default class RandomGenerator {
 
     /**
      * 生成标准的 UUID (版本 4)
+     * @Deprecated 使用 generateUUIDv4()
      * @returns 生成的 UUID 字符串
      */
     static generateUUID(): string {
@@ -91,34 +94,141 @@ export default class RandomGenerator {
     }
 
     /**
-     * 生成版本 6 UUID (基于时间排序)
-     * @returns 生成的版本 6 UUID 字符串
+     * 对于v1和v2，使用了crypto.randomBytes()来模拟节点ID，因为在JavaScript中无法直接获取MAC地址。在实际应用中，你可能需要一个固定的节点ID。
      */
-    static generateUUIDv6(): string {
-        const now = BigInt(Date.now());
-        const timeHigh = Number((now >> BigInt(28)) & BigInt(0xfffff));
-        const timeMid = Number((now >> BigInt(12)) & BigInt(0xffff));
-        const timeLow = Number(now & BigInt(0xfff));
-        const clockSeq = Math.floor(Math.random() * 16384);
-        const node = Array.from({length: 6}, () => Math.floor(Math.random() * 256));
 
-        const uuidBytes = new Uint8Array(16);
-        const dataView = new DataView(uuidBytes.buffer);
-
-        // time_high
-        dataView.setUint32(0, timeHigh);
-        // time_mid
-        dataView.setUint16(4, timeMid);
-        // time_low and version
-        dataView.setUint16(6, timeLow | 0x6000);
-        // clock_seq_hi_and_reserved
-        dataView.setUint8(8, (clockSeq >> 8) | 0x80);
-        // clock_seq_low
-        dataView.setUint8(9, clockSeq & 0xff);
-        // node
-        node.forEach((b, i) => dataView.setUint8(10 + i, b));
-
-        const hex = Array.from(uuidBytes, (b) => b.toString(16).padStart(2, "0")).join("");
-        return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+    // 辅助函数：生成指定位数的随机字节
+    private static randomBytes(size: number) {
+        return crypto.randomBytes(size);
     }
+
+    // 辅助函数：获取当前时间戳（从1582-10-15 00:00:00开始的100纳秒间隔数）
+    private static getTimestamp() {
+        const EPOCH = 122192928000000000n; // 1582-10-15 00:00:00 到 1970-01-01 00:00:00 的100纳秒数
+        const HUNDREDS_OF_NANOSECONDS = 10000n;
+        return BigInt(Date.now()) * HUNDREDS_OF_NANOSECONDS + EPOCH;
+    }
+
+    // UUID v1: 基于时间戳和节点ID
+    static generateUUIDv1() {
+        const timestamp = this.getTimestamp();
+        const clockSeq = this.randomBytes(2).readUInt16BE(0) & 0x3fff;
+        const node = this.randomBytes(6);
+
+        const timeHigh = Number((timestamp >> 32n) & 0xfffffffn);
+        const timeMid = Number((timestamp >> 16n) & 0xffffn);
+        const timeLow = Number(timestamp & 0xffffn);
+
+        const buf = Buffer.alloc(16);
+        buf.writeUInt32BE(timeLow, 0);
+        buf.writeUInt16BE(timeMid, 4);
+        buf.writeUInt16BE(timeHigh, 6);
+        buf.writeUInt16BE(clockSeq, 8);
+        node.copy(buf, 10);
+
+        buf[6] = (buf[6] & 0x0f) | 0x10; // 版本 1
+        buf[8] = (buf[8] & 0x3f) | 0x80; // 变体
+
+        return buf.toString("hex", 0, 4) + "-" +
+            buf.toString("hex", 4, 6) + "-" +
+            buf.toString("hex", 6, 8) + "-" +
+            buf.toString("hex", 8, 10) + "-" +
+            buf.toString("hex", 10, 16);
+    }
+
+    // UUID v2: DCE Security
+    static generateUUIDv2(localDomain = 0) {
+        // v2 实现类似于 v1，但将时间戳低位替换为本地域
+        const timestamp = this.getTimestamp();
+        const clockSeq = this.randomBytes(2).readUInt16BE(0) & 0x3fff;
+        const node = this.randomBytes(6);
+
+        const timeHigh = Number((timestamp >> 32n) & 0xfffffffn);
+        const timeMid = Number((timestamp >> 16n) & 0xffffn);
+
+        const buf = Buffer.alloc(16);
+        buf.writeUInt32BE(localDomain, 0);
+        buf.writeUInt16BE(timeMid, 4);
+        buf.writeUInt16BE(timeHigh, 6);
+        buf.writeUInt16BE(clockSeq, 8);
+        node.copy(buf, 10);
+
+        buf[6] = (buf[6] & 0x0f) | 0x20; // 版本 2
+        buf[8] = (buf[8] & 0x3f) | 0x80; // 变体
+
+        return buf.toString("hex", 0, 4) + "-" +
+            buf.toString("hex", 4, 6) + "-" +
+            buf.toString("hex", 6, 8) + "-" +
+            buf.toString("hex", 8, 10) + "-" +
+            buf.toString("hex", 10, 16);
+    }
+
+    // UUID v3: 基于名字的MD5哈希
+    static generateUUIDv3(namespace: BinaryLike, name: BinaryLike) {
+        const hash = crypto.createHash("md5").update(namespace).update(name).digest();
+
+        hash[6] = (hash[6] & 0x0f) | 0x30; // 版本 3
+        hash[8] = (hash[8] & 0x3f) | 0x80; // 变体
+
+        return hash.toString("hex", 0, 4) + "-" +
+            hash.toString("hex", 4, 6) + "-" +
+            hash.toString("hex", 6, 8) + "-" +
+            hash.toString("hex", 8, 10) + "-" +
+            hash.toString("hex", 10, 16);
+    }
+
+    // UUID v4: 完全随机
+    static generateUUIDv4() {
+        const bytes = this.randomBytes(16);
+
+        bytes[6] = (bytes[6] & 0x0f) | 0x40; // 版本 4
+        bytes[8] = (bytes[8] & 0x3f) | 0x80; // 变体
+
+        return bytes.toString("hex", 0, 4) + "-" +
+            bytes.toString("hex", 4, 6) + "-" +
+            bytes.toString("hex", 6, 8) + "-" +
+            bytes.toString("hex", 8, 10) + "-" +
+            bytes.toString("hex", 10, 16);
+    }
+
+    // UUID v5: 基于名字的SHA-1哈希
+    static generateUUIDv5(namespace: BinaryLike, name: BinaryLike) {
+        const hash = crypto.createHash("sha1").update(namespace).update(name).digest();
+
+        hash[6] = (hash[6] & 0x0f) | 0x50; // 版本 5
+        hash[8] = (hash[8] & 0x3f) | 0x80; // 变体
+
+        return hash.toString("hex", 0, 4) + "-" +
+            hash.toString("hex", 4, 6) + "-" +
+            hash.toString("hex", 6, 8) + "-" +
+            hash.toString("hex", 8, 10) + "-" +
+            hash.toString("hex", 10, 16);
+    }
+
+    // UUID v6: 可排序的时间戳
+    static generateUUIDv6() {
+        const timestamp = this.getTimestamp();
+        const clockSeq = this.randomBytes(2).readUInt16BE(0) & 0x3fff;
+        const node = this.randomBytes(6);
+
+        const timeHigh = Number((timestamp >> 28n) & 0xfffffffn);
+        const timeMid = Number((timestamp >> 12n) & 0xffffn);
+        const timeLow = Number(timestamp & 0xfffn);
+
+        const buf = Buffer.alloc(16);
+        buf.writeUInt32BE(timeHigh, 0);
+        buf.writeUInt16BE(timeMid, 4);
+        buf.writeUInt16BE((timeLow << 4) | 0x6, 6); // 版本 6
+        buf.writeUInt16BE(clockSeq, 8);
+        node.copy(buf, 10);
+
+        buf[8] = (buf[8] & 0x3f) | 0x80; // 变体
+
+        return buf.toString("hex", 0, 4) + "-" +
+            buf.toString("hex", 4, 6) + "-" +
+            buf.toString("hex", 6, 8) + "-" +
+            buf.toString("hex", 8, 10) + "-" +
+            buf.toString("hex", 10, 16);
+    }
+
 }
